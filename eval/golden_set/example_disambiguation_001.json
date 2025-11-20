@@ -1,0 +1,29 @@
+{
+  "test_id": "golden_disambiguation_001",
+  "intent_id": null,
+  "category": "adversarial",
+  "description": "Ambiguous term requiring disambiguation",
+  "input": {
+    "user_query": "Show margin trends",
+    "user_ctx": {
+      "tenant": "tenant_123",
+      "role": "analyst",
+      "region": "us-west"
+    }
+  },
+  "expected_output": {
+    "route": "clarify",
+    "plan": {
+      "needs_disambiguation": true,
+      "reasoning": "Term 'margin' is ambiguous - could mean margin percentage or margin dollars"
+    },
+    "clarify_question": "Do you mean margin percentage or margin dollars?"
+  },
+  "validation_criteria": {
+    "router_accuracy": true,
+    "disambiguation_triggered": true,
+    "clarify_question_present": true,
+    "no_sql_generated": true
+  }
+}
+

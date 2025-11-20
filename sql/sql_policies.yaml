@@ -1,0 +1,171 @@
+# SQL Validation Policies
+# Defines guardrails for SQL generation and execution
+
+version: "1.0"
+last_updated: "2025-01-01"
+
+# Allowed operations
+allowed_operations:
+  - "SELECT"
+  - "WITH"  # CTEs allowed
+  - "UNION"  # Union queries allowed (with caution)
+
+# Denied operations (hard block)
+denied_operations:
+  - "INSERT"
+  - "UPDATE"
+  - "DELETE"
+  - "MERGE"
+  - "CREATE"
+  - "ALTER"
+  - "DROP"
+  - "TRUNCATE"
+  - "EXECUTE"
+  - "EXECUTE_IMMEDIATE"
+  - "CALL"
+  - "GRANT"
+  - "REVOKE"
+
+# Denied functions (security risk)
+denied_functions:
+  - "EXECUTE_IMMEDIATE"
+  - "EVAL"
+  - "REGEXP_EXTRACT"  # Potential injection risk
+  - "PARSE_JSON"  # If not properly validated
+  - "SAFE.PARSE_JSON"  # Allowed if needed
+
+# Required clauses
+required_clauses:
+  - clause: "WHERE"
+    reason: "Must include tenant_id filter for RLS"
+    enforcement: "hard"
+  
+  - clause: "LIMIT"
+    reason: "Prevent unbounded result sets"
+    enforcement: "hard"
+    max_value: 10000  # Per tenant policy
+
+# Schema allowlist
+allowed_datasets:
+  - "sales"
+  - "inventory"
+  - "dimensions"
+
+allowed_tables:
+  - "fct_sales"
+  - "fct_transactions"
+  - "fct_inventory"
+  - "fct_costs"
+  - "dim_product"
+  - "dim_store"
+  - "dim_customer"
+  - "dim_channel"
+
+# Column-level restrictions
+restricted_columns:
+  - table: "dim_customer"
+    columns: ["email", "phone", "ssn", "credit_card"]
+    reason: "PII - requires special access"
+  
+  - table: "fct_sales"
+    columns: ["customer_email", "customer_phone"]
+    reason: "PII - requires special access"
+
+# Query complexity limits
+complexity_limits:
+  max_subquery_depth: 3
+  max_join_count: 5
+  max_cte_count: 3
+  max_union_count: 2
+  max_where_conditions: 10
+
+# Cost controls
+cost_controls:
+  dry_run_required: true
+  max_bytes_billed: 10737418240  # 10 GB
+  max_slots: 2000  # BigQuery slots
+  max_timeout_seconds: 300
+  
+  # Alert thresholds
+  alert_on_bytes: 5368709120  # 5 GB (50% of max)
+  block_on_bytes: 10737418240  # 10 GB (hard limit)
+
+# Tenant isolation enforcement
+tenant_isolation:
+  required_predicate: "tenant_id = :tenant_id"
+  enforcement_method: "where_clause_required"
+  fallback: "block_query"  # If tenant_id not found, block
+
+# Time filter requirements
+time_filters:
+  required_for_intents:
+    - "net_sales"
+    - "margin_by_category"
+    - "inventory_turnover"
+    - "avg_ticket"
+  
+  max_date_range_days: 365
+  default_range_days: 30  # If not specified
+  
+  required_columns:
+    - "order_date"
+    - "transaction_date"
+    - "inventory_date"
+
+# Validation rules
+validation_rules:
+  - name: "no_string_concat"
+    pattern: "CONCAT.*\\+.*|\\|\\|"
+    action: "warn"  # Allow but log
+    reason: "Prefer parameterized queries"
+  
+  - name: "require_aggregation_for_measures"
+    check: "If measure is aggregated in intent, SQL must use GROUP BY"
+    enforcement: "hard"
+  
+  - name: "no_wildcard_select"
+    pattern: "SELECT \\*"
+    action: "block"
+    reason: "Explicit column selection required for audit"
+    exception: "SELECT * FROM (subquery) is allowed if subquery is explicit"
+
+# Linting rules (SQLFluff-style)
+sql_linting:
+  max_line_length: 120
+  require_trailing_comma: false
+  require_table_aliases: true
+  require_column_qualification: true  # table.column instead of just column
+  
+  style_checks:
+    - "indentation_consistent"
+    - "no_trailing_whitespace"
+    - "keywords_uppercase"  # SELECT, FROM, WHERE, etc.
+
+# Post-execution validation
+post_execution:
+  max_result_rows: 10000  # Hard limit
+  max_result_bytes: 104857600  # 100 MB
+  validate_result_schema: true  # Ensure result matches expected schema
+  
+  # Cost tracking
+  track_bytes_processed: true
+  track_slots_used: true
+  track_query_time: true
+  
+  # Alerting
+  alert_on_high_cost: true
+  alert_on_slow_query: true  # > p95 threshold
+
+# Template validation
+template_validation:
+  require_parameterization: true  # No string interpolation
+  require_placeholder_format: "{{variable_name}}"  # Jinja2-style
+  validate_placeholder_names: true  # Must match plan JSON keys
+  
+  # Template metadata
+  require_template_metadata:
+    - "intent_id"
+    - "description"
+    - "parameters"
+    - "example"
+

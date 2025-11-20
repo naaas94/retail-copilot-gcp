@@ -1,0 +1,220 @@
+{
+  "version": "1.0",
+  "dashboards": [
+    {
+      "name": "copilot_performance",
+      "title": "Retail Copilot Performance",
+      "description": "Latency, error rate, and throughput metrics",
+      "panels": [
+        {
+          "title": "Latency p50/p95/p99",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "latency_p50",
+              "query": "SELECT TIMESTAMP_TRUNC(created_at, MINUTE) as time, APPROX_QUANTILES(latency_ms, 100)[OFFSET(50)] as p50 FROM copilot_usage.queries GROUP BY 1",
+              "unit": "ms"
+            },
+            {
+              "name": "latency_p95",
+              "query": "SELECT TIMESTAMP_TRUNC(created_at, MINUTE) as time, APPROX_QUANTILES(latency_ms, 100)[OFFSET(95)] as p95 FROM copilot_usage.queries GROUP BY 1",
+              "unit": "ms",
+              "alert_threshold": 2000
+            },
+            {
+              "name": "latency_p99",
+              "query": "SELECT TIMESTAMP_TRUNC(created_at, MINUTE) as time, APPROX_QUANTILES(latency_ms, 100)[OFFSET(99)] as p99 FROM copilot_usage.queries GROUP BY 1",
+              "unit": "ms"
+            }
+          ]
+        },
+        {
+          "title": "Error Rate",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "error_rate",
+              "query": "SELECT TIMESTAMP_TRUNC(created_at, MINUTE) as time, COUNTIF(status = 'ERROR') / COUNT(*) as error_rate FROM copilot_usage.queries GROUP BY 1",
+              "unit": "percentage",
+              "alert_threshold": 0.05
+            }
+          ]
+        },
+        {
+          "title": "Throughput (Queries per Minute)",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "qpm",
+              "query": "SELECT TIMESTAMP_TRUNC(created_at, MINUTE) as time, COUNT(*) as qpm FROM copilot_usage.queries GROUP BY 1",
+              "unit": "count"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "copilot_quality",
+      "title": "Retail Copilot Quality Metrics",
+      "description": "Faithfulness, golden set pass rate, citation coverage",
+      "panels": [
+        {
+          "title": "Golden Set Pass Rate",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "golden_set_pass_rate",
+              "query": "SELECT TIMESTAMP_TRUNC(eval_timestamp, HOUR) as time, AVG(CASE WHEN passed THEN 1 ELSE 0 END) as pass_rate FROM copilot_eval.golden_set_results GROUP BY 1",
+              "unit": "percentage",
+              "alert_threshold": 0.70
+            }
+          ]
+        },
+        {
+          "title": "Faithfulness Score",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "faithfulness_avg",
+              "query": "SELECT TIMESTAMP_TRUNC(created_at, HOUR) as time, AVG(faithfulness_score) as avg_faithfulness FROM copilot_usage.queries WHERE route = 'qa' GROUP BY 1",
+              "unit": "score",
+              "alert_threshold": 0.75
+            }
+          ]
+        },
+        {
+          "title": "Citation Coverage",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "citation_coverage",
+              "query": "SELECT TIMESTAMP_TRUNC(created_at, HOUR) as time, AVG(citation_coverage) as coverage FROM copilot_usage.queries WHERE route = 'qa' GROUP BY 1",
+              "unit": "percentage",
+              "alert_threshold": 0.90
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "copilot_usage",
+      "title": "Retail Copilot Usage & Cost",
+      "description": "Query volume, intent distribution, cost per answer",
+      "panels": [
+        {
+          "title": "Queries per Day",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "queries_per_day",
+              "query": "SELECT DATE(created_at) as date, COUNT(*) as queries FROM copilot_usage.queries GROUP BY 1",
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Intent Distribution",
+          "type": "pie_chart",
+          "metrics": [
+            {
+              "name": "intent_distribution",
+              "query": "SELECT intent_id, COUNT(*) as count FROM copilot_usage.queries WHERE created_at > NOW() - INTERVAL 7 DAY GROUP BY 1",
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Cost per Answer (p95)",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "cost_p95",
+              "query": "SELECT TIMESTAMP_TRUNC(created_at, HOUR) as time, APPROX_QUANTILES(cost_usd, 100)[OFFSET(95)] as p95 FROM copilot_cost.usage GROUP BY 1",
+              "unit": "USD",
+              "alert_threshold": 0.01
+            }
+          ]
+        },
+        {
+          "title": "Daily Cost",
+          "type": "time_series",
+          "metrics": [
+            {
+              "name": "daily_cost",
+              "query": "SELECT DATE(created_at) as date, SUM(cost_usd) as total_cost FROM copilot_cost.usage GROUP BY 1",
+              "unit": "USD",
+              "alert_threshold": 100.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "copilot_tenant",
+      "title": "Per-Tenant Metrics",
+      "description": "Usage and performance by tenant",
+      "panels": [
+        {
+          "title": "Queries per Tenant (Last 7 Days)",
+          "type": "bar_chart",
+          "metrics": [
+            {
+              "name": "queries_per_tenant",
+              "query": "SELECT tenant_id, COUNT(*) as queries FROM copilot_usage.queries WHERE created_at > NOW() - INTERVAL 7 DAY GROUP BY 1 ORDER BY 2 DESC",
+              "unit": "count"
+            }
+          ]
+        },
+        {
+          "title": "Cost per Tenant (Last 7 Days)",
+          "type": "bar_chart",
+          "metrics": [
+            {
+              "name": "cost_per_tenant",
+              "query": "SELECT tenant_id, SUM(cost_usd) as total_cost FROM copilot_cost.usage WHERE created_at > NOW() - INTERVAL 7 DAY GROUP BY 1 ORDER BY 2 DESC",
+              "unit": "USD"
+            }
+          ]
+        },
+        {
+          "title": "Error Rate by Tenant",
+          "type": "bar_chart",
+          "metrics": [
+            {
+              "name": "error_rate_by_tenant",
+              "query": "SELECT tenant_id, COUNTIF(status = 'ERROR') / COUNT(*) as error_rate FROM copilot_usage.queries WHERE created_at > NOW() - INTERVAL 7 DAY GROUP BY 1 ORDER BY 2 DESC",
+              "unit": "percentage"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "alerts": [
+    {
+      "name": "latency_p95_breach",
+      "condition": "latency_p95 > 3000",
+      "severity": "P1",
+      "notification_channels": ["on-call", "slack"]
+    },
+    {
+      "name": "error_rate_breach",
+      "condition": "error_rate > 0.05",
+      "severity": "P1",
+      "notification_channels": ["on-call", "slack"]
+    },
+    {
+      "name": "golden_set_regression",
+      "condition": "golden_set_pass_rate < 0.70",
+      "severity": "P2",
+      "notification_channels": ["slack"]
+    },
+    {
+      "name": "cost_overrun",
+      "condition": "daily_cost > 100.0",
+      "severity": "P2",
+      "notification_channels": ["slack", "email"]
+    }
+  ]
+}
+

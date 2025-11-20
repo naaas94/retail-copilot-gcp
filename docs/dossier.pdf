@@ -1,0 +1,15 @@
+# Architecture Dossier
+# This file represents the full architecture dossier PDF referenced in the README
+# In a real implementation, this would be the actual PDF document
+
+**Note**: This is a placeholder. The actual dossier PDF should be placed here or referenced from the docs/ directory.
+
+The dossier contains:
+- Architecture diagrams (logical, sequence, tenancy model)
+- Component specifications
+- NL→SQL pipeline design
+- Guardrails and safety policies
+- MLOps practices
+- Evaluation methodology
+- RACI and governance
+

@@ -1,0 +1,99 @@
+# Intent Taxonomy for Retail Analytics Copilot
+# Defines canonical intents that map natural language queries to SQL templates
+# Each intent has: domain, granularity, time_window support, measures, dimensions, filters, viz_type
+
+version: "1.0"
+last_updated: "2025-01-01"
+owner: "AI Solutions Architect"
+review_date: "2025-04-01"
+
+intents:
+  - intent_id: "net_sales"
+    domain: "revenue"
+    description: "Calculate net sales (gross sales minus returns/discounts)"
+    granularity: ["store", "region", "global"]
+    time_window: true
+    required_measures:
+      - name: "net_sales"
+        unit: "currency"
+        formula: "SUM(gross_sales - returns - discounts)"
+    optional_dimensions:
+      - category
+      - product
+      - channel
+    filters:
+      - date_range: true
+      - exclude_returns: true
+    viz_type: ["line", "bar", "table"]
+    sql_template: "time_series_sales.sql"
+    
+  - intent_id: "margin_by_category"
+    domain: "profitability"
+    description: "Calculate gross margin percentage by product category"
+    granularity: ["global", "region"]
+    time_window: true
+    required_measures:
+      - name: "gross_margin_pct"
+        unit: "percentage"
+        formula: "(SUM(revenue - cogs) / SUM(revenue)) * 100"
+    optional_dimensions:
+      - category
+      - subcategory
+    filters:
+      - date_range: true
+      - min_margin_threshold: false
+    viz_type: ["bar", "table"]
+    sql_template: "margin_by_category.sql"
+    
+  - intent_id: "inventory_turnover"
+    domain: "inventory"
+    description: "Calculate inventory turnover ratio (COGS / average inventory)"
+    granularity: ["store", "region", "global"]
+    time_window: true
+    required_measures:
+      - name: "turnover_ratio"
+        unit: "ratio"
+        formula: "SUM(cogs) / AVG(inventory_value)"
+    optional_dimensions:
+      - category
+      - supplier
+    filters:
+      - date_range: true
+    viz_type: ["table", "bar"]
+    sql_template: "inventory_turnover.sql"
+    
+  - intent_id: "avg_ticket"
+    domain: "transactions"
+    description: "Calculate average transaction value (AOV)"
+    granularity: ["store", "region", "global"]
+    time_window: true
+    required_measures:
+      - name: "avg_ticket"
+        unit: "currency"
+        formula: "SUM(total_amount) / COUNT(DISTINCT transaction_id)"
+    optional_dimensions:
+      - channel
+      - customer_segment
+    filters:
+      - date_range: true
+    viz_type: ["line", "bar", "table"]
+    sql_template: "avg_ticket.sql"
+
+# Intent routing rules
+routing_rules:
+  - pattern: ".*sales.*revenue.*"
+    intent_id: "net_sales"
+    confidence_threshold: 0.7
+    
+  - pattern: ".*margin.*profit.*"
+    intent_id: "margin_by_category"
+    confidence_threshold: 0.7
+    
+  - pattern: ".*turnover.*inventory.*"
+    intent_id: "inventory_turnover"
+    confidence_threshold: 0.7
+    
+  - pattern: ".*average.*ticket.*order.*value.*"
+    intent_id: "avg_ticket"
+    confidence_threshold: 0.7
+

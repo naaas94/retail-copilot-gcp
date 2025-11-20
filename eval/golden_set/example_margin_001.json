@@ -1,0 +1,62 @@
+{
+  "test_id": "golden_margin_001",
+  "intent_id": "margin_by_category",
+  "category": "canonical",
+  "description": "Canonical phrasing for margin by category query",
+  "input": {
+    "user_query": "What's our gross margin by category last quarter?",
+    "user_ctx": {
+      "tenant": "tenant_123",
+      "role": "analyst",
+      "region": "us-west"
+    }
+  },
+  "expected_output": {
+    "route": "sql",
+    "plan": {
+      "intent_id": "margin_by_category",
+      "measures": [
+        {
+          "name": "gross_margin_pct",
+          "table": "calculated",
+          "column": "margin",
+          "unit": "percentage",
+          "aggregation": "AVG"
+        }
+      ],
+      "dimensions": [
+        {
+          "name": "category",
+          "table": "dim_product",
+          "column": "category",
+          "type": "category"
+        }
+      ],
+      "time_window": {
+        "grain": "quarter",
+        "start": "2024-07-01",
+        "end": "2024-09-30"
+      }
+    },
+    "sql_structural_check": {
+      "tables": ["fct_sales", "dim_product"],
+      "has_tenant_filter": true,
+      "has_time_filter": true,
+      "has_limit": true,
+      "margin_calculation": "(revenue - cogs) / revenue * 100"
+    },
+    "viz_spec": {
+      "type": "bar",
+      "x_axis": "category",
+      "y_axis": "gross_margin_pct"
+    }
+  },
+  "validation_criteria": {
+    "router_accuracy": true,
+    "plan_schema_valid": true,
+    "sql_lints_pass": true,
+    "sql_execution_accuracy": 0.95,
+    "viz_schema_valid": true
+  }
+}
+

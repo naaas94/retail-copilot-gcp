@@ -1,0 +1,189 @@
+# Policy Configuration for Retail Copilot
+# Defines tenant-aware guardrails, limits, and access controls
+
+version: "1.0"
+last_updated: "2025-01-01"
+owner: "Solutions Architect"
+
+# Tenant-level policies
+tenant_policies:
+  default:
+    # Query execution limits
+    max_date_range_days: 365
+    max_rows_per_query: 10000
+    max_bytes_billed: 10737418240  # 10 GB
+    max_query_timeout_seconds: 300
+    
+    # Allowed tables/columns (schema allowlist)
+    allowed_datasets:
+      - "sales"
+      - "inventory"
+      - "dimensions"
+    
+    allowed_tables:
+      - "fct_sales"
+      - "fct_transactions"
+      - "fct_inventory"
+      - "fct_costs"
+      - "dim_product"
+      - "dim_store"
+      - "dim_customer"
+    
+    # Denied operations
+    denied_operations:
+      - "INSERT"
+      - "UPDATE"
+      - "DELETE"
+      - "MERGE"
+      - "CREATE"
+      - "ALTER"
+      - "DROP"
+      - "TRUNCATE"
+      - "EXECUTE"
+    
+    # Required predicates (enforced by validator)
+    required_predicates:
+      - field: "tenant_id"
+        operator: "="
+        source: "jwt_claims"
+        description: "Row-level security: tenant isolation"
+      
+      - field: "order_date"
+        operator: "BETWEEN"
+        required_for_intents: ["net_sales", "margin_by_category", "avg_ticket"]
+        description: "Time range filter required for time-series queries"
+    
+    # Cost controls
+    cost_controls:
+      dry_run_before_execution: true
+      max_bytes_per_query: 10737418240  # 10 GB
+      alert_threshold_bytes: 5368709120  # 5 GB (50% of max)
+      budget_per_day_usd: 100.00
+    
+    # PII / Sensitive data policies
+    pii_policy:
+      redact_columns:
+        - "email"
+        - "phone"
+        - "ssn"
+        - "credit_card"
+      regions_with_strict_pii: ["EU"]
+      gdpr_compliance: true
+      retention_days: 0  # No storage of PII in logs
+    
+    # Role-based access
+    roles:
+      analyst:
+        allowed_intents: ["net_sales", "margin_by_category", "avg_ticket"]
+        max_rows_per_query: 10000
+      
+      viewer:
+        allowed_intents: ["net_sales", "avg_ticket"]
+        max_rows_per_query: 1000
+        read_only: true
+      
+      admin:
+        allowed_intents: ["*"]  # All intents
+        max_rows_per_query: 100000
+        can_export: true
+
+# Intent-specific policies
+intent_policies:
+  net_sales:
+    required_filters: ["date_range"]
+    default_limit: 1000
+    max_categories: 50  # For grouped breakdowns
+    
+  margin_by_category:
+    required_filters: ["date_range"]
+    default_limit: 100
+    min_margin_threshold: null  # Can be set per-tenant
+    
+  inventory_turnover:
+    required_filters: ["date_range"]
+    default_limit: 100
+    aggregation_period: "monthly"  # or "quarterly"
+    
+  avg_ticket:
+    required_filters: ["date_range"]
+    default_limit: 1000
+
+# Safety guardrails
+safety_guardrails:
+  # SQL validation
+  sql_validation:
+    require_limit: true
+    require_where_clause: true
+    max_subquery_depth: 3
+    max_join_count: 5
+    banned_functions:
+      - "EXECUTE_IMMEDIATE"
+      - "EVAL"
+      - "REGEXP_EXTRACT"
+    
+  # Hallucination prevention
+  hallucination_prevention:
+    require_glossary_grounding: true
+    slot_fill_confidence_threshold: 0.7
+    disambiguation_on_ambiguous: true
+    refusal_on_insufficient_evidence: true
+  
+  # Cost prediction
+  cost_prediction:
+    dry_run_required: true
+    block_if_over_budget: true
+    suggest_alternative_on_over_budget: true
+
+# Promotion gates (CI/CD)
+promotion_gates:
+  min_golden_set_success_rate: 0.80  # 80% of golden cases must pass
+  min_faithfulness_score: 0.75
+  max_contradiction_rate: 0.0
+  min_citation_coverage: 0.90
+  router_deterministic: true
+  sql_lints_pass: true
+  viz_schema_pass: true
+  
+  # Performance SLOs
+  latency_p95_max_seconds: 2.0
+  cost_p95_max_usd: 0.01
+  
+  # Rollback triggers
+  auto_rollback_on:
+    - error_rate > 0.05
+    - latency_p95 > 3.0
+    - cost_p95 > 0.02
+
+# Monitoring & Alerting
+monitoring:
+  slo_targets:
+    latency_p95: 2.0
+    latency_p99: 5.0
+    error_rate: 0.01
+    cost_per_answer_p95: 0.01
+    
+  alert_thresholds:
+    latency_p95_breach: 3.0
+    error_rate_breach: 0.05
+    cost_per_answer_breach: 0.02
+    budget_daily_breach: 0.80  # 80% of daily budget
+    
+  dashboards:
+    - name: "copilot_performance"
+      metrics: ["latency_p50", "latency_p95", "error_rate", "cost_per_answer"]
+    
+    - name: "copilot_quality"
+      metrics: ["faithfulness_avg", "golden_set_pass_rate", "citation_coverage"]
+    
+    - name: "copilot_usage"
+      metrics: ["queries_per_day", "queries_per_tenant", "intent_distribution"]
+
+# Tenancy model
+tenancy:
+  isolation_model: "dataset_per_tenant"  # or "project_per_tenant"
+  rls_enforcement: true
+  cls_enforcement: true  # Column-level security for PII
+  service_account_per_tenant: true
+  log_router_per_tenant: true
+  budget_per_tenant: true
+

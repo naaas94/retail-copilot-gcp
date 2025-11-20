@@ -1,0 +1,178 @@
+# Promotion Gates Configuration
+# Defines criteria that must be met before deploying changes to production
+
+version: "1.0"
+last_updated: "2025-01-01"
+
+# Promotion gate thresholds
+gates:
+  # Quality gates
+  min_faithfulness: 0.75
+  max_contradiction_rate: 0.0
+  min_citation_coverage: 0.90
+  
+  # Schema & validation gates
+  router_deterministic: true
+  planner_schema_pass: true
+  sql_lints_pass: true
+  viz_schema_pass: true
+  
+  # Golden set gates
+  golden_success_ratio: 0.80  # 80% of golden cases must pass
+  golden_coverage_ratio: 0.95  # 95% of golden set must be testable
+  
+  # Performance gates
+  latency_p95_max_seconds: 2.0
+  latency_p99_max_seconds: 5.0
+  error_rate_max: 0.01
+  
+  # Cost gates
+  cost_p95_max_usd: 0.01
+  cost_p99_max_usd: 0.02
+  
+  # Safety gates
+  no_ddl_dml_escape: true
+  tenant_isolation_enforced: true
+  pii_redaction_enforced: true
+  
+  # Code quality gates
+  unit_tests_pass: true
+  integration_tests_pass: true
+  coverage_min: 0.80  # 80% code coverage
+
+# Gate enforcement levels
+enforcement:
+  blocker:  # Blocks deployment if failed
+    - router_deterministic
+    - sql_lints_pass
+    - no_ddl_dml_escape
+    - tenant_isolation_enforced
+    - unit_tests_pass
+    - golden_success_ratio
+  
+  warning:  # Warns but allows deployment
+    - min_faithfulness
+    - min_citation_coverage
+    - latency_p95_max_seconds
+    - cost_p95_max_usd
+  
+  advisory:  # Logs but doesn't block
+    - golden_coverage_ratio
+    - coverage_min
+
+# Stage-specific gates
+stages:
+  poc:
+    required_gates:
+      - router_deterministic
+      - sql_lints_pass
+      - no_ddl_dml_escape
+      - golden_success_ratio
+    thresholds:
+      golden_success_ratio: 0.70  # Lower threshold for PoC
+  
+  mvp:
+    required_gates:
+      - router_deterministic
+      - sql_lints_pass
+      - no_ddl_dml_escape
+      - golden_success_ratio
+      - latency_p95_max_seconds
+      - cost_p95_max_usd
+      - min_faithfulness
+    thresholds:
+      golden_success_ratio: 0.80
+      latency_p95_max_seconds: 2.0
+      cost_p95_max_usd: 0.01
+      min_faithfulness: 0.75
+  
+  prod:
+    required_gates:
+      - router_deterministic
+      - sql_lints_pass
+      - no_ddl_dml_escape
+      - golden_success_ratio
+      - latency_p95_max_seconds
+      - cost_p95_max_usd
+      - min_faithfulness
+      - error_rate_max
+      - tenant_isolation_enforced
+      - pii_redaction_enforced
+    thresholds:
+      golden_success_ratio: 0.80
+      latency_p95_max_seconds: 2.0
+      cost_p95_max_usd: 0.01
+      min_faithfulness: 0.75
+      error_rate_max: 0.01
+
+# Rollback triggers (auto-revert conditions)
+rollback_triggers:
+  - condition: "error_rate > 0.05"
+    severity: "P1"
+    action: "auto_revert"
+  
+  - condition: "latency_p95 > 3.0"
+    severity: "P1"
+    action: "auto_revert"
+  
+  - condition: "cost_p95 > 0.02"
+    severity: "P2"
+    action: "alert_and_manual_review"
+  
+  - condition: "golden_set_pass_rate < 0.70"
+    severity: "P2"
+    action: "alert_and_manual_review"
+
+# Canary deployment gates
+canary:
+  ramp_schedule:
+    - percent: 5
+      duration_minutes: 120
+      gates: ["error_rate_max", "latency_p95_max_seconds"]
+    
+    - percent: 25
+      duration_minutes: 240
+      gates: ["error_rate_max", "latency_p95_max_seconds", "cost_p95_max_usd"]
+    
+    - percent: 50
+      duration_minutes: 480
+      gates: ["error_rate_max", "latency_p95_max_seconds", "cost_p95_max_usd", "golden_success_ratio"]
+    
+    - percent: 100
+      duration_minutes: 1440  # 24 hours
+      gates: ["error_rate_max", "latency_p95_max_seconds", "cost_p95_max_usd", "golden_success_ratio", "min_faithfulness"]
+  
+  auto_halt_conditions:
+    - "error_rate > baseline + 0.05"
+    - "latency_p95 > baseline * 1.20"
+    - "cost_p95 > baseline * 1.20"
+    - "task_success_lift < 0.05"  # Must show at least 5% improvement
+
+# Gate evaluation script
+evaluation:
+  script: "scripts/check_gates.py"
+  inputs:
+    - metrics_json: "output from aggregate_eval.py"
+    - golden_set_results: "output from golden set tests"
+    - unit_test_results: "output from pytest"
+  
+  outputs:
+    - gate_status: "JSON with pass/fail per gate"
+    - promotion_decision: "promote|block|warn"
+    - rollback_recommendation: "yes|no"
+
+# Approval workflow
+approval:
+  poc:
+    required_approvers: ["Solutions Architect"]
+  
+  mvp:
+    required_approvers: ["Solutions Architect", "MLE Lead"]
+  
+  prod:
+    required_approvers: ["Solutions Architect", "MLE Lead", "Data Engineer"]
+    auto_approve_if: 
+      - "all_blocker_gates_pass: true"
+      - "canary_stable_24h: true"
+      - "no_rollback_triggered: true"
+

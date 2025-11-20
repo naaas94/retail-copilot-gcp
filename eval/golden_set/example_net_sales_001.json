@@ -1,0 +1,74 @@
+{
+  "test_id": "golden_net_sales_001",
+  "intent_id": "net_sales",
+  "category": "canonical",
+  "description": "Canonical phrasing for net sales time series query",
+  "input": {
+    "user_query": "Show weekly revenue growth for Q3 by region; exclude returns; top 5 only",
+    "user_ctx": {
+      "tenant": "tenant_123",
+      "role": "analyst",
+      "region": "us-west"
+    }
+  },
+  "expected_output": {
+    "route": "sql",
+    "plan": {
+      "intent_id": "net_sales",
+      "measures": [
+        {
+          "name": "net_sales",
+          "table": "fct_sales",
+          "column": "net_sales",
+          "unit": "USD",
+          "aggregation": "SUM"
+        }
+      ],
+      "dimensions": [
+        {
+          "name": "region",
+          "table": "dim_store",
+          "column": "region",
+          "type": "geography"
+        },
+        {
+          "name": "week",
+          "table": "fct_sales",
+          "column": "order_date",
+          "type": "time"
+        }
+      ],
+      "time_window": {
+        "grain": "week",
+        "start": "2024-07-01",
+        "end": "2024-09-30"
+      },
+      "limits": {
+        "rows": 1000,
+        "categories": 5
+      }
+    },
+    "sql_structural_check": {
+      "tables": ["fct_sales", "dim_store"],
+      "columns": ["net_sales", "region", "order_date"],
+      "has_tenant_filter": true,
+      "has_time_filter": true,
+      "has_limit": true,
+      "no_ddl_dml": true
+    },
+    "viz_spec": {
+      "type": "line",
+      "x_axis": "week",
+      "y_axis": "net_sales",
+      "series": "region"
+    }
+  },
+  "validation_criteria": {
+    "router_accuracy": true,
+    "plan_schema_valid": true,
+    "sql_lints_pass": true,
+    "sql_execution_accuracy": 0.95,
+    "viz_schema_valid": true
+  }
+}
+
