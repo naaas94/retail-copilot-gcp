@@ -7,7 +7,19 @@ tags: []
 # Changelog
 # All notable changes to the Retail Copilot architecture and scaffolding
 
-## [Unreleased]
+## [Unreleased] - [11212025]
+
+> **Note on Strategy**: This release pivots the repository towards a **Local-First PoC** architecture. The goal is to enable rapid prototyping and demonstration of the Agentic SQL logic using DuckDB and local fixtures, removing the immediate dependency on a full GCP environment. This "scale-later" approach allows for faster iteration on the core cognitive architecture (Router -> Planner -> SQL Generator).
+
+### Added
+- `src/core/sql_generator.py`: New component to encapsulate Plan-to-SQL logic.
+- `tests/conftest.py`: Added comprehensive fixtures (MockLLM, Router, Planner) for unit tests.
+
+### Changed
+- **Refactor**: Moved SQL generation logic from `src/ui/app.py` to `src/core/sql_generator.py`.
+- **Tests**: Fixed `test_planner.py`, `test_router.py`, and `test_sql_lints.py` to be runnable and passing.
+- **Documentation**: Renamed `ops/runbook.md` to `ops/production_runbook_reference.md` to clarify its purpose as a reference, not a local runbook.
+- **Documentation**: Updated `README.md` architecture diagram to include `SQLGenerator`.
 
 ### Added
 - Initial repository structure with spec-first architecture
