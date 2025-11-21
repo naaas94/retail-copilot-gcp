@@ -4,6 +4,9 @@ tags: []
 
 ---
 
+> [!IMPORTANT]
+> **Reference Only**: This runbook describes the operational procedures for a full **Production GCP Deployment**. The current repository is a **Local-First Demo** using DuckDB. This document serves as a reference for how the system would be operated if deployed to GCP.
+
 # Retail Copilot Runbook
 # Operational procedures for incident response, monitoring, and maintenance
 

@@ -94,13 +94,12 @@ def test_planner_plan_schema_and_slots(planner, golden_set):
         if "expected_output" not in case or "plan" not in case["expected_output"]:
             continue
             
-        plan = planner.run(
+        plan = planner.plan(
             case["input"]["user_query"],
             glossary_hits=case.get("glossary_hits", []),
             intent_catalog=case.get("intent_catalog", []),
-            user_ctx=case["input"]["user_ctx"],
-            temperature=0.0
-        )
+            user_ctx=case["input"]["user_ctx"]
+        ).model_dump()
         
         # Validate JSON schema
         jsonschema.validate(instance=plan, schema=PLAN_SCHEMA)
@@ -132,12 +131,11 @@ def test_planner_glossary_grounding(planner, glossary):
         {"term": "category", "table": "dim_product", "column": "category"}
     ]
     
-    plan = planner.run(
+    plan = planner.plan(
         query,
         glossary_hits=glossary_hits,
-        user_ctx={"tenant": "tenant_123", "role": "analyst"},
-        temperature=0.0
-    )
+        user_ctx={"tenant": "tenant_123", "role": "analyst"}
+    ).model_dump()
     
     # Check that measures reference glossary
     for measure in plan["measures"]:
@@ -156,12 +154,11 @@ def test_planner_disambiguation_trigger(planner):
         {"term": "margin", "table": "ambiguous", "similarity": 0.5}  # Low similarity
     ]
     
-    plan = planner.run(
+    plan = planner.plan(
         query,
         glossary_hits=glossary_hits,
-        user_ctx={"tenant": "tenant_123", "role": "analyst"},
-        temperature=0.0
-    )
+        user_ctx={"tenant": "tenant_123", "role": "analyst"}
+    ).model_dump()
     
     assert plan["needs_disambiguation"] == True, \
         "Planner should trigger disambiguation for ambiguous terms"
@@ -174,8 +171,8 @@ def test_planner_determinism(planner, golden_queries):
     Test that planner produces deterministic outputs
     """
     for q in golden_queries:
-        plan1 = planner.run(q["user_query"], user_ctx=q["user_ctx"], temperature=0.0)
-        plan2 = planner.run(q["user_query"], user_ctx=q["user_ctx"], temperature=0.0)
+        plan1 = planner.plan(q["user_query"], user_ctx=q["user_ctx"])
+        plan2 = planner.plan(q["user_query"], user_ctx=q["user_ctx"])
         
         assert plan1 == plan2, "Planner must be deterministic with temperature=0.0"
 

@@ -14,8 +14,8 @@ def test_router_schema_and_determinism(router, golden_queries):
     """
     for q in golden_queries:
         # Test determinism: same input should produce same output
-        out1 = router.run(q["user_query"], user_ctx=q["user_ctx"], temperature=0.0)
-        out2 = router.run(q["user_query"], user_ctx=q["user_ctx"], temperature=0.0)
+        out1 = router.route(q["user_query"], user_ctx=q["user_ctx"]).model_dump()
+        out2 = router.route(q["user_query"], user_ctx=q["user_ctx"]).model_dump()
         
         assert out1 == out2, "Router must be deterministic with temperature=0.0"
         
@@ -57,11 +57,10 @@ def test_router_unsafe_detection(router):
     ]
     
     for case in unsafe_queries:
-        result = router.run(
+        result = router.route(
             case["query"],
-            user_ctx={"tenant": "tenant_123", "role": "analyst"},
-            temperature=0.0
-        )
+            user_ctx={"tenant": "tenant_123", "role": "analyst"}
+        ).model_dump()
         assert result["route"] == case["expected_route"], \
             f"Expected route '{case['expected_route']}' for query: {case['query']}"
         assert case["expected_reason"].lower() in result["reason"].lower(), \
@@ -79,12 +78,11 @@ def test_router_policy_enforcement(router, policy_profiles):
     }
     
     # Viewer role should not have access to all intents
-    result = router.run(
+    result = router.route(
         "Show margin by category",
         user_ctx=restricted_role,
-        policy_profile=policy_profiles["viewer"],
-        temperature=0.0
-    )
+        policy_profile=policy_profiles["viewer"]
+    ).model_dump()
     
     # Should either route to "unsafe" or block the intent
     assert result["route"] in {"unsafe", "clarify"}, \
@@ -102,11 +100,10 @@ def test_router_golden_set_coverage(router, golden_set):
         if "expected_output" not in case or "route" not in case["expected_output"]:
             continue
             
-        result = router.run(
+        result = router.route(
             case["input"]["user_query"],
-            user_ctx=case["input"]["user_ctx"],
-            temperature=0.0
-        )
+            user_ctx=case["input"]["user_ctx"]
+        ).model_dump()
         
         total += 1
         if result["route"] == case["expected_output"]["route"]:

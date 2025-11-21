@@ -61,7 +61,7 @@ def test_sql_has_tenant_filter(sql_validator, sql_emitter, plan, template, user_
     
     # Check for tenant_id condition
     tenant_conditions = [
-        str(condition).lower() for condition in where.find_all(exp.Eq)
+        str(condition).lower() for condition in where.find_all(exp.EQ)
         if "tenant_id" in str(condition).lower()
     ]
     assert len(tenant_conditions) > 0, "WHERE clause must include tenant_id filter"
@@ -148,11 +148,11 @@ def test_sql_complexity_limits(sql_validator, sql_emitter, plan, template):
     parsed = parse_one(sql)
     
     # Check subquery depth
-    subqueries = parsed.find_all(exp.Subquery)
+    subqueries = list(parsed.find_all(exp.Subquery))
     assert len(subqueries) <= 3, "SQL must not exceed max subquery depth of 3"
     
     # Check join count
-    joins = parsed.find_all(exp.Join)
+    joins = list(parsed.find_all(exp.Join))
     assert len(joins) <= 5, "SQL must not exceed max join count of 5"
 
 
