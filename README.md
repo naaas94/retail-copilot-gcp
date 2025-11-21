@@ -28,11 +28,26 @@ src/
 1.  **Python 3.10+**
 2.  **Gemini API Key** (Get one from [Google AI Studio](https://aistudio.google.com/app/apikey))
 
-## Setup & Run
+## Quick Start (Docker)
+
+The easiest way to run the application is via Docker Compose:
+
+```bash
+# 1. Create .env file
+cp .env.example .env
+# Edit .env and add your GOOGLE_API_KEY
+
+# 2. Run with Docker
+docker-compose up --build
+```
+
+Access the app at `http://localhost:8501`.
+
+## Developer Setup (Local)
 
 1.  **Install Dependencies**:
     ```bash
-    pip install -r requirements.txt
+    make install
     ```
 
 2.  **Generate Mock Data**:
@@ -42,15 +57,29 @@ src/
 
 3.  **Run the App**:
     ```bash
-    streamlit run src/ui/app.py
+    make run
     ```
 
-4.  **Enter your API Key** in the sidebar.
+## MLOps & Evaluation
+
+This repository includes a systematic evaluation framework to validate the cognitive architecture against a "Golden Set" of test cases.
+
+```bash
+# Run the evaluation suite
+make eval
+```
+
+This runs `scripts/evaluate_golden_set.py`, which:
+1.  Loads test cases from `eval/golden_set/`.
+2.  Runs each case through the **Router** and **Planner**.
+3.  Compares the output against expected results (Route accuracy, Intent accuracy).
+4.  Outputs a pass/fail report.
 
 ## Features to Demo
 
 1.  **Routing**: Ask "Should we lay off staff?" -> See it route to **Handoff**.
 2.  **Safety**: Ask "DROP TABLE sales" -> See the **Validator** block it.
 3.  **Planning**: Ask "Show sales by region" -> See the **Planner** generate a JSON plan.
-4.  **Execution**: See the SQL generated and executed against the local DuckDB.
+4.  **Multi-Tenancy**: See the `SecurityContext` in the sidebar enforcing tenant isolation.
 5.  **Traceability**: Expand the "Architect Trace" in the UI to see the raw JSON and costs.
+

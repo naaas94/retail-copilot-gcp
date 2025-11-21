@@ -10,18 +10,23 @@ from src.adapters.gemini import GeminiAdapter
 from src.adapters.duckdb_adapter import DuckDBAdapter
 from src.core.sql_generator import SQLGenerator
 
+from src.core.config import settings
+from src.core.context import get_mock_context
+
 # Page Config
-st.set_page_config(page_title="Retail Copilot (ASA Demo)", layout="wide")
+st.set_page_config(page_title=settings.APP_NAME, layout="wide")
 
 # Sidebar - Configuration
 st.sidebar.title("Configuration")
-api_key = st.sidebar.text_input("Gemini API Key", type="password")
-if not api_key:
-    api_key = os.getenv("GOOGLE_API_KEY")
+api_key = st.sidebar.text_input("Gemini API Key", type="password", value=settings.GOOGLE_API_KEY or "")
 
 if not api_key:
-    st.error("Please provide a Gemini API Key in the sidebar or env vars.")
+    st.error("Please provide a Gemini API Key in the sidebar or .env file.")
     st.stop()
+
+# Mock Context (Simulating Middleware)
+user_ctx = get_mock_context(role="admin")
+st.sidebar.markdown(f"**User Context**:\n- Tenant: `{user_ctx.tenant_id}`\n- Role: `{user_ctx.role}`")
 
 # Initialize Components (Singleton-ish)
 @st.cache_resource
@@ -74,12 +79,12 @@ if prompt := st.chat_input("Ex: Show top 5 products by sales in Q3"):
             # 1. Router
             with st.status("Thinking...", expanded=True) as status:
                 st.write("Routing query...")
-                route_out = router.route(prompt, user_ctx={"tenant": "demo", "role": "admin"})
+                route_out = router.route(prompt, user_ctx=user_ctx.model_dump())
                 trace_data["router"] = route_out.model_dump()
                 
                 if route_out.route == "sql":
                     st.write("Generating Plan...")
-                    plan_out = planner.plan(prompt, user_ctx={"tenant": "demo", "role": "admin"})
+                    plan_out = planner.plan(prompt, user_ctx=user_ctx.model_dump())
                     trace_data["plan"] = plan_out.model_dump()
                     
                     if plan_out.needs_disambiguation:

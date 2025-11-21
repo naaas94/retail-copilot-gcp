@@ -7,7 +7,7 @@ tags: []
 # Changelog
 # All notable changes to the Retail Copilot architecture and scaffolding
 
-## [Unreleased] - [11212025]
+## [1.0.1] - [11212025]
 
 > **Note on Strategy**: This release pivots the repository towards a **Local-First PoC** architecture. The goal is to enable rapid prototyping and demonstration of the Agentic SQL logic using DuckDB and local fixtures, removing the immediate dependency on a full GCP environment. This "scale-later" approach allows for faster iteration on the core cognitive architecture (Router -> Planner -> SQL Generator).
 
@@ -21,6 +21,13 @@ tags: []
 - **Documentation**: Renamed `ops/runbook.md` to `ops/production_runbook_reference.md` to clarify its purpose as a reference, not a local runbook.
 - **Documentation**: Updated `README.md` architecture diagram to include `SQLGenerator`.
 
+### Added 
+- **Configuration**: Added `src/core/config.py` and `.env.example` for robust configuration management.
+- **Security**: Added `src/core/context.py` with `SecurityContext` model for multi-tenancy.
+- **Containerization**: Added `Dockerfile` and `docker-compose.yml` for production-ready deployment.
+- **MLOps**: Added `scripts/evaluate_golden_set.py` for systematic evaluation of the agent.
+- **DevOps**: Added `.github/workflows/ci.yml` and `Makefile` for CI/CD and developer experience.
+
 ### Added
 - Initial repository structure with spec-first architecture
 - Catalog definitions (intents, glossary, policies)
@@ -29,7 +36,9 @@ tags: []
 - Golden set examples and unit test scaffolds
 - Operations documentation (runbook, monitoring, gates)
 
-## [1.0.0] - 2025-01-01
+---
+
+## [1.0.0] - [11202025]
 
 ### Added
 - **Catalog**:
