@@ -70,7 +70,7 @@ This document tracks the status of issues identified in the initial system revie
 
 ### 32. **CI Build Failure (Numpy/Pandas Incompatibility)** (Critical)
 - **Issue:** CI failed with `PyArray_Descr` error because `pandas==2.1.0` is incompatible with `numpy>=2.0.0` (which was installed by default).
-- **Fix:** Upgraded `pandas` to `2.2.2` (which supports Python 3.12 wheels) and pinned `numpy==1.26.4`.
+- **Fix:** Upgraded `pandas` to `2.2.2` and `duckdb` to `1.0.0` (for Python 3.12 wheels), and pinned `numpy==1.26.4`.
 - **Status:** Fix Applied.
 
 ---
