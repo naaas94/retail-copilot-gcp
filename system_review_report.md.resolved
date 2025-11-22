@@ -68,6 +68,11 @@ This document tracks the status of issues identified in the initial system revie
 - **Fix:** Implemented mandatory `tenant_id` filter check in `Validator` using `sqlglot` AST analysis.
 - **Status:** Verified.
 
+### 32. **CI Build Failure (Numpy/Pandas Incompatibility)** (Critical)
+- **Issue:** CI failed with `PyArray_Descr` error because `pandas==2.1.0` is incompatible with `numpy>=2.0.0` (which was installed by default).
+- **Fix:** Pinned `numpy==1.26.4` in `requirements.txt`.
+- **Status:** Fix Applied.
+
 ---
 
 ## ⚠️ Pending / Backlog
@@ -99,7 +104,7 @@ This document tracks the status of issues identified in the initial system revie
 ## Summary Statistics
 | Category | Total | Resolved | Pending |
 |----------|-------|----------|---------|
-| Critical | 4     | 4        | 0       |
+| Critical | 5     | 5        | 0       |
 | Moderate | 12    | 5        | 7       |
 | Low      | 16    | 3        | 13      |
-| **TOTAL**| **32**| **12**   | **20**  |
+| **TOTAL**| **33**| **13**   | **20**  |
