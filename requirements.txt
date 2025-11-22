@@ -1,5 +1,6 @@
 streamlit==1.28.0
 pandas==2.1.0
+numpy==1.26.4
 duckdb==0.9.0
 google-generativeai==0.3.0
 pydantic==2.4.0
