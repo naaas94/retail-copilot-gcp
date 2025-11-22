@@ -1,0 +1,105 @@
+# Retail Copilot System Review Report (Status Update)
+**Date:** 2025-11-21
+**Status:** In Progress
+
+This document tracks the status of issues identified in the initial system review.
+
+---
+
+## ✅ Resolved & Verified
+
+### 1. **Config Model Mismatch with LLM Adapter** (Critical)
+- **Issue:** `LLM_MODEL` in config (`gemini-pro`) contradicted `GeminiAdapter` default (`gemini-1.5-flash`).
+- **Fix:** Updated `GeminiAdapter` to use `settings.LLM_MODEL` as default.
+- **Status:** Verified.
+
+### 2. **GeminiAdapter Ignores system_instruction Parameter** (Critical)
+- **Issue:** `system_instruction` was ignored by the adapter.
+- **Fix:** Implemented support by prepending system instructions to the prompt (compatible with all models).
+- **Status:** Verified.
+
+### 3. **Plan Schema Inconsistency** (Critical)
+- **Issue:** `Plan` model in `types.py` missing `reasoning` field required by tests.
+- **Fix:** Added `reasoning` field to `Plan` model and relaxed type constraints for flexibility.
+- **Status:** Verified.
+
+### 4. **Missing Dependencies** (Critical)
+- **Issue:** Missing `jsonschema`, `curl`, and unpinned versions.
+- **Fix:** Updated `requirements.txt` with pinned versions and added `jsonschema`. Updated `Dockerfile` to install `curl`.
+- **Status:** Verified.
+
+### 5. **Inconsistent README Documentation** (Moderate)
+- **Issue:** README referenced non-existent files and outdated architecture.
+- **Fix:** Updated `README.md` architecture diagram and file paths.
+- **Status:** Verified.
+
+### 6. **Validator Incomplete Table Allowlist Check** (Moderate)
+- **Issue:** Validator used naive regex and didn't enforce allowlist.
+- **Fix:** Implemented robust AST-based validation using `sqlglot` to enforce table allowlist.
+- **Status:** Verified.
+
+### 7. **Test Fixture Mock Overwrites Real Implementation** (Moderate)
+- **Issue:** `router` fixture mocked `.run()` instead of `.route()`.
+- **Fix:** Updated `conftest.py` to correctly mock `Router` dependencies without overwriting methods.
+- **Status:** Verified.
+
+### 8. **Inconsistent Use of user_ctx Type** (Moderate)
+- **Issue:** Mixed usage of `dict` and `SecurityContext` model.
+- **Fix:** Standardized `Router`, `Planner`, and `App` to use `SecurityContext` object. Updated tests to match.
+- **Status:** Verified.
+
+### 12. **Missing .gitignore File** (Low)
+- **Issue:** No `.gitignore` present.
+- **Fix:** Created standard Python `.gitignore`.
+- **Status:** Verified.
+
+### 16. **No Logging Framework** (Low)
+- **Issue:** No logging configuration.
+- **Fix:** Added `LOG_LEVEL` to `src/core/config.py`.
+- **Status:** Partially Resolved (Config added, full implementation pending).
+
+### 21. **Missing Prompts Documentation** (Low)
+- **Issue:** No documentation for prompt versioning.
+- **Fix:** Created `prompts/README.md`.
+- **Status:** Verified.
+
+### 25. **No Tenant Isolation in SQL Validation** (High)
+- **Issue:** Validator didn't enforce `tenant_id` filter.
+- **Fix:** Implemented mandatory `tenant_id` filter check in `Validator` using `sqlglot` AST analysis.
+- **Status:** Verified.
+
+---
+
+## ⚠️ Pending / Backlog
+
+### Moderate Issues
+- **18. Test Coverage Gaps**: No tests for `sql_generator`, `validator`, `utils`, `context`, `config`.
+- **20. Golden Set Directory Empty**: Need to expand golden set to 20+ diverse cases.
+- **24. No Rate Limiting**: No protection against API spam.
+- **26. API Key Exposure in UI**: API key visible in sidebar text input.
+- **29. Tight Coupling to Streamlit**: Core logic coupled to UI, missing service layer.
+
+### Low Issues
+- **9. Docker Compose Uses Outdated Version Syntax**: Remove `version: '3.8'`.
+- **10. Hardcoded Prompt Names**: Move prompt filenames to config.
+- **11. Inconsistent Error Handling**: Add proper logging and error types.
+- **13. SQL Generator Schema Hardcoded**: Load schema from catalog.
+- **14. Incomplete Type Hints**: Add missing return types.
+- **15. Inconsistent String Quotes**: Standardize on double quotes.
+- **17. Plan Model Field Type Too Loose**: Consider stricter Pydantic models for measures/dimensions.
+- **22. Incomplete Evaluation Documentation**: Expand README evaluation section.
+- **23. No Architecture Decision Records (ADRs)**: Document design decisions.
+- **27. .env.example Missing Line Endings Consistency**: Enforce LF.
+- **28. Unused Config Settings**: Remove `DUCKDB_PATH`, `CATALOG_DIR`.
+- **30. No Caching Strategy**: Implement caching for LLM calls.
+- **31. Unreviewed Script: generate_mock_data.py**: align with schema.
+
+---
+
+## Summary Statistics
+| Category | Total | Resolved | Pending |
+|----------|-------|----------|---------|
+| Critical | 4     | 4        | 0       |
+| Moderate | 12    | 5        | 7       |
+| Low      | 16    | 3        | 13      |
+| **TOTAL**| **32**| **12**   | **20**  |

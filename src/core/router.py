@@ -3,6 +3,7 @@ from typing import Dict, Any, Optional
 from src.core.types import RouterOutput
 from src.interfaces.llm import LLMClient
 from src.core.utils import PromptLoader
+from src.core.context import SecurityContext
 
 class Router:
     def __init__(self, llm_client: LLMClient, prompt_loader: PromptLoader):
@@ -13,7 +14,7 @@ class Router:
     def route(
         self, 
         user_query: str, 
-        user_ctx: Dict[str, str], 
+        user_ctx: SecurityContext, 
         glossary_hits: Optional[list] = None,
         policy_profile: Optional[Dict[str, Any]] = None
     ) -> RouterOutput:
@@ -23,7 +24,7 @@ class Router:
         inputs_section = f"""
 ## Actual Inputs
 - user_query: "{user_query}"
-- user_ctx: {json.dumps(user_ctx)}
+- user_ctx: {user_ctx.model_dump_json()}
 - glossary_hits: {json.dumps(glossary_hits or [])}
 - policy_profile: {json.dumps(policy_profile or {})}
 """

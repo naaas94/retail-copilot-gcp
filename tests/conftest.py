@@ -3,7 +3,9 @@ import json
 from unittest.mock import MagicMock
 from src.core.planner import Planner
 from src.core.utils import PromptLoader
+from src.core.utils import PromptLoader
 from src.interfaces.llm import LLMClient
+from src.core.context import SecurityContext
 
 # Mock LLM Client
 class MockLLM(LLMClient):
@@ -75,7 +77,7 @@ def golden_set():
         {
             "input": {
                 "user_query": "Show net sales by category",
-                "user_ctx": {"tenant": "t1", "role": "admin"}
+                "user_ctx": SecurityContext(tenant_id="t1", user_id="u1", role="admin")
             },
             "expected_output": {"plan": True},
             "allowed_measures": ["net_sales"],
@@ -94,12 +96,13 @@ def glossary():
 @pytest.fixture
 def golden_queries():
     return [
-        {"user_query": "Show sales", "user_ctx": {}}
+        {"user_query": "Show sales", "user_ctx": SecurityContext(tenant_id="t1", user_id="u1", role="admin")}
     ]
 
 @pytest.fixture
 def router(mock_llm, prompt_loader):
     from src.core.router import Router
+    from src.core.types import RouterOutput
     # Mock Router.run to return deterministic output for tests
     # Since Router uses LLM, we can either mock LLM or mock Router.run
     # test_router.py tests Router.run logic, so we should mock LLM.
@@ -109,11 +112,7 @@ def router(mock_llm, prompt_loader):
     # Or just mock Router.run for simplicity in this fix.
     
     router = Router(mock_llm, prompt_loader)
-    router.run = MagicMock(return_value={
-        "route": "sql",
-        "reason": "Mock reason",
-        "clarify_question": None
-    })
+    # Do not mock router.route directly, let it use mock_llm
     return router
 
 @pytest.fixture
@@ -135,7 +134,7 @@ def sql_emitter():
     # Mock SQL Emitter/Generator
     emitter = MagicMock()
     # Default to returning a safe, valid SQL with time filter
-    emitter.run.return_value = "SELECT * FROM fct_sales WHERE tenant_id = 't1' AND order_date >= '2024-01-01' LIMIT 100"
+    emitter.generate_sql.return_value = "SELECT * FROM fct_sales WHERE tenant_id = 't1' AND order_date >= '2024-01-01' LIMIT 100"
     return emitter
 
 @pytest.fixture
@@ -157,7 +156,7 @@ def template(tmp_path):
 
 @pytest.fixture
 def user_ctx():
-    return {"tenant": "t1"}
+    return SecurityContext(tenant_id="t1", user_id="u1", role="admin")
 
 @pytest.fixture
 def allowed_tables():

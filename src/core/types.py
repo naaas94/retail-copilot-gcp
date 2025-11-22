@@ -10,13 +10,14 @@ class Intent(BaseModel):
 class Plan(BaseModel):
     intent_id: str
     tables: List[str]
-    measures: List[Dict[str, str]]
-    dimensions: List[Dict[str, str]]
-    filters: List[Dict[str, str]]
+    measures: List[Dict[str, Any]]
+    dimensions: List[Dict[str, Any]]
+    filters: List[Dict[str, Any]]
     limits: Dict[str, int]
     viz_hint: Optional[Dict[str, Any]] = None
     needs_disambiguation: bool = False
     clarification_question: Optional[str] = None
+    reasoning: Optional[str] = None
 
 class RouterOutput(BaseModel):
     route: Literal["qa", "sql", "unsafe", "handoff", "clarify"]

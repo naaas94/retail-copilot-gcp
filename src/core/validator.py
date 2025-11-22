@@ -6,7 +6,7 @@ class Validator:
         self.policy = policy_config or {}
         self.allowed_tables = {"fct_sales", "dim_product", "dim_store"}
 
-    def validate(self, sql: str) -> bool:
+    def validate(self, sql: str, tenant_id: Optional[str] = None) -> bool:
         """
         Validates SQL against safety rules.
         Returns True if safe, raises ValueError if unsafe.
@@ -27,10 +27,32 @@ class Validator:
         if "LIMIT" not in sql_upper:
              raise ValueError("Policy Violation: Query must contain a LIMIT clause.")
 
-        # 4. Check for allowed tables (Naive regex, but good for PoC)
-        # In a real app, use sqlglot to extract tables
-        # This is a loose check: "Are you querying something weird?"
-        # For now, we skip strict table extraction to avoid sqlglot dependency issues in this script,
-        # but we'd claim we do it in the architecture doc.
+        # 4. Enforce table allowlist
+        from sqlglot import parse_one, exp
+        
+        try:
+            parsed = parse_one(sql)
+            tables = {str(t.name).lower() for t in parsed.find_all(exp.Table)}
+            unauthorized = tables - {t.lower() for t in self.allowed_tables}
+            if unauthorized:
+                raise ValueError(f"Security Violation: Unauthorized tables: {unauthorized}")
+                
+            # 5. Enforce Tenant Isolation
+            # Check if any WHERE clause contains tenant_id equality check
+            if tenant_id:
+                has_tenant_filter = False
+                for where in parsed.find_all(exp.Where):
+                    # Naive string check on the where clause expression for PoC
+                    if f"tenant_id = '{tenant_id}'" in where.sql().lower():
+                        has_tenant_filter = True
+                        break
+                        
+                if not has_tenant_filter:
+                     # Fallback to regex if AST check is too complex for this snippet
+                     if f"tenant_id = '{tenant_id}'" not in sql.lower():
+                        raise ValueError("Security Violation: Missing tenant_id filter")
+
+        except Exception as e:
+            raise ValueError(f"SQL parsing error: {e}")
         
         return True

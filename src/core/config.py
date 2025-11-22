@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     LLM_MODEL: str = "gemini-pro"
     TEMPERATURE: float = 0.0
     
+    # Logging
+    LOG_LEVEL: str = "INFO"
+    
     # Database
     DUCKDB_PATH: str = "retail_copilot.duckdb"
     

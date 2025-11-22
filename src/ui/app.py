@@ -79,12 +79,12 @@ if prompt := st.chat_input("Ex: Show top 5 products by sales in Q3"):
             # 1. Router
             with st.status("Thinking...", expanded=True) as status:
                 st.write("Routing query...")
-                route_out = router.route(prompt, user_ctx=user_ctx.model_dump())
+                route_out = router.route(prompt, user_ctx=user_ctx)
                 trace_data["router"] = route_out.model_dump()
                 
                 if route_out.route == "sql":
                     st.write("Generating Plan...")
-                    plan_out = planner.plan(prompt, user_ctx=user_ctx.model_dump())
+                    plan_out = planner.plan(prompt, user_ctx=user_ctx)
                     trace_data["plan"] = plan_out.model_dump()
                     
                     if plan_out.needs_disambiguation:
@@ -102,7 +102,7 @@ if prompt := st.chat_input("Ex: Show top 5 products by sales in Q3"):
                         trace_data["sql_generated"] = sql
                         
                         st.write("Validating SQL...")
-                        validator.validate(sql)
+                        validator.validate(sql, tenant_id=user_ctx.tenant_id)
                         
                         st.write("Executing Query...")
                         df = db.execute_query(sql)

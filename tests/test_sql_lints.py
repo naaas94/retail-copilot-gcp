@@ -14,7 +14,7 @@ def test_sql_no_ddl_dml(sql_validator, sql_emitter, plan, template):
     Test that SQL validator blocks DDL/DML operations
     """
     # Test that generated SQL doesn't contain DDL/DML
-    sql = sql_emitter.run(template, plan)
+    sql = sql_emitter.generate_sql(template, plan)
     
     assert "DROP" not in sql.upper(), "SQL must not contain DROP"
     assert "UPDATE" not in sql.upper(), "SQL must not contain UPDATE"
@@ -34,7 +34,7 @@ def test_sql_has_limit(sql_validator, sql_emitter, plan, template):
     """
     Test that all SQL queries include LIMIT clause
     """
-    sql = sql_emitter.run(template, plan)
+    sql = sql_emitter.generate_sql(template, plan)
     
     assert "LIMIT" in sql.upper(), "SQL must include LIMIT clause"
     
@@ -49,7 +49,7 @@ def test_sql_has_tenant_filter(sql_validator, sql_emitter, plan, template, user_
     """
     Test that all SQL queries include tenant_id filter
     """
-    sql = sql_emitter.run(template, plan)
+    sql = sql_emitter.generate_sql(template, plan)
     
     # Check for tenant_id in WHERE clause
     assert "tenant_id" in sql.lower(), "SQL must include tenant_id filter"
@@ -71,7 +71,7 @@ def test_sql_allowlist_tables(sql_validator, sql_emitter, plan, template, allowe
     """
     Test that SQL only references allowed tables
     """
-    sql = sql_emitter.run(template, plan)
+    sql = sql_emitter.generate_sql(template, plan)
     
     # Extract table names from SQL
     parsed = parse_one(sql)
@@ -89,7 +89,7 @@ def test_sql_allowlist_columns(sql_validator, sql_emitter, plan, template, allow
     """
     Test that SQL only references allowed columns
     """
-    sql = sql_emitter.run(template, plan)
+    sql = sql_emitter.generate_sql(template, plan)
     
     # Extract column references
     parsed = parse_one(sql)
@@ -113,7 +113,7 @@ def test_sql_time_filter_required(sql_validator, sql_emitter, plan, template, in
     if not intent_requires_time:
         pytest.skip("Intent does not require time filter")
     
-    sql = sql_emitter.run(template, plan)
+    sql = sql_emitter.generate_sql(template, plan)
     
     # Check for date/time filter in WHERE clause
     assert any(keyword in sql.upper() for keyword in ["BETWEEN", ">=", "<=", "DATE_TRUNC"]), \
@@ -129,7 +129,7 @@ def test_sql_budget_check(sql_validator, sql_emitter, plan, template, max_bytes)
     """
     Test that SQL validator checks query budget before execution
     """
-    sql = sql_emitter.run(template, plan)
+    sql = sql_emitter.generate_sql(template, plan)
     
     # Dry-run should estimate bytes
     estimated_bytes = sql_validator.dry_run(sql)
@@ -143,7 +143,7 @@ def test_sql_complexity_limits(sql_validator, sql_emitter, plan, template):
     """
     Test that SQL complexity is within limits
     """
-    sql = sql_emitter.run(template, plan)
+    sql = sql_emitter.generate_sql(template, plan)
     
     parsed = parse_one(sql)
     

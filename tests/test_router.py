@@ -5,6 +5,7 @@ Tests deterministic routing, schema validation, and policy enforcement
 
 import pytest
 import json
+from src.core.context import SecurityContext
 from typing import Dict, Any
 
 
@@ -59,7 +60,7 @@ def test_router_unsafe_detection(router):
     for case in unsafe_queries:
         result = router.route(
             case["query"],
-            user_ctx={"tenant": "tenant_123", "role": "analyst"}
+            user_ctx=SecurityContext(tenant_id="tenant_123", user_id="u1", role="analyst")
         ).model_dump()
         assert result["route"] == case["expected_route"], \
             f"Expected route '{case['expected_route']}' for query: {case['query']}"
@@ -71,11 +72,12 @@ def test_router_policy_enforcement(router, policy_profiles):
     """
     Test that router respects policy profiles
     """
-    restricted_role = {
-        "tenant": "tenant_123",
-        "role": "viewer",
-        "region": "us-west"
-    }
+    restricted_role = SecurityContext(
+        tenant_id="tenant_123",
+        user_id="u1",
+        role="viewer",
+        region="us-west"
+    )
     
     # Viewer role should not have access to all intents
     result = router.route(

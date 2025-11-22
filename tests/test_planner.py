@@ -6,6 +6,7 @@ Tests JSON schema validation, slot coverage, and glossary grounding
 import pytest
 import jsonschema
 from typing import Dict, Any
+from src.core.context import SecurityContext
 
 
 # Planner output schema (mirrors prompts/planner-retail-v2.md)
@@ -134,7 +135,7 @@ def test_planner_glossary_grounding(planner, glossary):
     plan = planner.plan(
         query,
         glossary_hits=glossary_hits,
-        user_ctx={"tenant": "tenant_123", "role": "analyst"}
+        user_ctx=SecurityContext(tenant_id="tenant_123", user_id="u1", role="analyst")
     ).model_dump()
     
     # Check that measures reference glossary
@@ -157,7 +158,7 @@ def test_planner_disambiguation_trigger(planner):
     plan = planner.plan(
         query,
         glossary_hits=glossary_hits,
-        user_ctx={"tenant": "tenant_123", "role": "analyst"}
+        user_ctx=SecurityContext(tenant_id="tenant_123", user_id="u1", role="analyst")
     ).model_dump()
     
     assert plan["needs_disambiguation"] == True, \

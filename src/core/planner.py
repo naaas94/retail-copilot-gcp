@@ -3,6 +3,7 @@ from typing import Dict, Any, Optional
 from src.core.types import Plan
 from src.interfaces.llm import LLMClient
 from src.core.utils import PromptLoader
+from src.core.context import SecurityContext
 
 class Planner:
     def __init__(self, llm_client: LLMClient, prompt_loader: PromptLoader):
@@ -13,7 +14,7 @@ class Planner:
     def plan(
         self, 
         user_query: str, 
-        user_ctx: Dict[str, str], 
+        user_ctx: SecurityContext, 
         glossary_hits: Optional[list] = None,
         intent_catalog: Optional[list] = None
     ) -> Plan:
@@ -21,7 +22,7 @@ class Planner:
         inputs_section = f"""
 ## Actual Inputs
 - user_query: "{user_query}"
-- user_ctx: {json.dumps(user_ctx)}
+- user_ctx: {user_ctx.model_dump_json()}
 - glossary_hits: {json.dumps(glossary_hits or [])}
 - intent_catalog: {json.dumps(intent_catalog or [])}
 """

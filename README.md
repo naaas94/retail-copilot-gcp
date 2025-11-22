@@ -12,13 +12,17 @@ src/
 │   ├── router.py     # Decision logic (QA vs SQL vs Unsafe)
 │   ├── planner.py    # Plan generation logic
 │   ├── sql_generator.py # Plan -> SQL conversion
-│   └── validator.py  # Safety checks (No DDL, etc.)
+│   ├── validator.py  # Safety checks (No DDL, etc.)
+│   ├── types.py      # Data models
+│   ├── config.py     # Configuration
+│   ├── context.py    # Security context
+│   └── utils.py      # Utilities (PromptLoader)
 ├── interfaces/       # PROTOCOLS (The "Architect" layer)
 │   ├── llm.py        # LLMClient Protocol
 │   └── db.py         # DatabaseClient Protocol
 ├── adapters/         # CONCRETE IMPLEMENTATIONS
 │   ├── gemini.py     # Adapter for Google Gemini API
-│   └── duckdb.py     # Adapter for DuckDB (Simulates BigQuery)
+│   └── duckdb_adapter.py # Adapter for DuckDB (Simulates BigQuery)
 └── ui/
     └── app.py        # Streamlit Entrypoint
 ```
@@ -46,11 +50,13 @@ Access the app at `http://localhost:8501`.
 ## Developer Setup (Local)
 
 1.  **Install Dependencies**:
+
     ```bash
     make install
     ```
 
 2.  **Generate Mock Data**:
+
     ```bash
     python scripts/generate_mock_data.py
     ```
@@ -70,6 +76,7 @@ make eval
 ```
 
 This runs `scripts/evaluate_golden_set.py`, which:
+
 1.  Loads test cases from `eval/golden_set/`.
 2.  Runs each case through the **Router** and **Planner**.
 3.  Compares the output against expected results (Route accuracy, Intent accuracy).
@@ -82,4 +89,3 @@ This runs `scripts/evaluate_golden_set.py`, which:
 3.  **Planning**: Ask "Show sales by region" -> See the **Planner** generate a JSON plan.
 4.  **Multi-Tenancy**: See the `SecurityContext` in the sidebar enforcing tenant isolation.
 5.  **Traceability**: Expand the "Architect Trace" in the UI to see the raw JSON and costs.
-
