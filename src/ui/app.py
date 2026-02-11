@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+root = Path(__file__).resolve().parents[2]  # project root
+if str(root) not in sys.path:
+    sys.path.insert(0, str(root))
+
 import streamlit as st
 import pandas as pd
 import time
